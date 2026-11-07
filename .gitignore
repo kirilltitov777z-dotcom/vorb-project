@@ -1,0 +1,35 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Generated WARP profiles
+*.conf
+!android/app/src/main/res/**/*.conf
+vorb-warp.conf
+wgcf-account.toml
+
+# Temp
+tmp/
+*.log

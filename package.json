@@ -1,0 +1,28 @@
+{
+  "name": "vorb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vorb — Cloudflare WARP config generator and WireGuard VPN client",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "vpn",
+    "wireguard",
+    "warp",
+    "cloudflare",
+    "vorb"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1"
+  }
+}

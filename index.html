@@ -1,0 +1,1658 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#141218">
+  <meta name="description" content="Vorb — быстрый WireGuard-конфиг для Cloudflare WARP. Создайте профиль за несколько секунд и подключитесь через приложение Vorb.">
+  <title>Vorb — свободный интернет на скорости волны</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%236750A4'/%3E%3Cstop offset='1' stop-color='%2300C2B8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M10 38c7-10 13-10 20 0s13 10 20 0' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('vorb-theme');
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fdf7ff;
+      --surface: #fffaff;
+      --surface-2: #f4ebff;
+      --surface-3: #ece0fa;
+      --text: #1d1b20;
+      --muted: #625b71;
+      --primary: #6750a4;
+      --on-primary: #ffffff;
+      --primary-container: #e9ddff;
+      --on-primary-container: #22005d;
+      --tertiary: #006a6a;
+      --tertiary-container: #9cf1f0;
+      --on-tertiary-container: #002020;
+      --outline: #7a757f;
+      --error: #ba1a1a;
+      --success: #146c2e;
+      --shadow: 0 24px 80px rgba(49, 27, 80, 0.14);
+      --radius-xl: 40px;
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --max: 1180px;
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #141218;
+      --surface: #1d1b20;
+      --surface-2: #26232e;
+      --surface-3: #322e3c;
+      --text: #e8e2ee;
+      --muted: #cac4d0;
+      --primary: #d0bcff;
+      --on-primary: #381e72;
+      --primary-container: #4f378b;
+      --on-primary-container: #eaddff;
+      --tertiary: #4fd8d8;
+      --tertiary-container: #004f4f;
+      --on-tertiary-container: #9cf1f0;
+      --outline: #938f99;
+      --error: #ffb4ab;
+      --success: #7ee2a8;
+      --shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: -1;
+      width: 560px;
+      height: 560px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    body::before {
+      top: -220px;
+      left: -160px;
+      background: var(--primary);
+    }
+
+    body::after {
+      right: -180px;
+      bottom: -240px;
+      background: var(--tertiary);
+    }
+
+    ::selection {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--tertiary);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -60px;
+      left: 16px;
+      z-index: 100;
+      padding: 10px 16px;
+      border-radius: 0 0 14px 14px;
+      background: var(--primary);
+      color: var(--on-primary);
+      text-decoration: none;
+      transition: top 0.2s ease;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    .container {
+      width: min(var(--max), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid color-mix(in srgb, var(--outline) 18%, transparent);
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 72px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-size: 1.35rem;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--tertiary));
+      box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+
+    .brand-mark svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .brand-dot {
+      color: var(--tertiary);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav a {
+      padding: 9px 13px;
+      border-radius: 999px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.93rem;
+      font-weight: 550;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .nav a:hover {
+      color: var(--text);
+      background: var(--surface-2);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid color-mix(in srgb, var(--outline) 28%, transparent);
+      border-radius: 50%;
+      background: var(--surface);
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .icon-button:hover {
+      transform: translateY(-2px);
+      background: var(--surface-2);
+    }
+
+    .icon-button svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    [data-theme="light"] .icon-sun {
+      display: none;
+    }
+
+    [data-theme="dark"] .icon-moon {
+      display: none;
+    }
+
+    .header-telegram {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 17px;
+      border-radius: 999px;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 650;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .header-telegram:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+
+    .hero {
+      position: relative;
+      padding: 92px 0 56px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 15px;
+      border: 1px solid color-mix(in srgb, var(--outline) 25%, transparent);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--tertiary);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--tertiary) 18%, transparent);
+    }
+
+    .hero h1 {
+      max-width: 920px;
+      margin: 24px auto 22px;
+      font-size: clamp(2.75rem, 7.4vw, 5.6rem);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+      font-weight: 850;
+    }
+
+    .gradient-text {
+      background: linear-gradient(100deg, var(--primary) 10%, var(--tertiary) 90%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      max-width: 640px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.16rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 13px 24px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.98rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn svg {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--on-primary);
+      box-shadow: 0 14px 36px color-mix(in srgb, var(--primary) 32%, transparent);
+    }
+
+    .btn-tonal {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--outline) 22%, transparent);
+    }
+
+    .hero-note {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 22px;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .hero-note span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .hero-note svg {
+      width: 15px;
+      height: 15px;
+      color: var(--tertiary);
+    }
+
+    .generator {
+      padding: 34px 0 88px;
+      scroll-margin-top: 90px;
+    }
+
+    .generator-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 1.1fr);
+      align-items: center;
+      gap: clamp(30px, 5vw, 64px);
+      padding: clamp(26px, 5vw, 58px);
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--outline) 18%, transparent);
+      border-radius: var(--radius-xl);
+      background:
+        radial-gradient(1100px 400px at 0% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 60%),
+        linear-gradient(145deg, var(--surface), var(--surface-2));
+      box-shadow: var(--shadow);
+    }
+
+    .generator-card::after {
+      content: "";
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--tertiary) 25%, transparent);
+      pointer-events: none;
+    }
+
+    .orb-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .orb {
+      --fill: 100%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: min(300px, 68vw);
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--outline) 22%, transparent);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--surface-3) 90%, white 10%), var(--surface));
+      box-shadow:
+        inset 0 0 60px color-mix(in srgb, var(--primary) 8%, transparent),
+        0 22px 60px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+
+    .orb-water {
+      position: absolute;
+      top: var(--fill);
+      left: -35%;
+      width: 170%;
+      height: 170%;
+      border-radius: 43% 47% 44% 48% / 47% 43% 49% 45%;
+      background: linear-gradient(135deg, var(--primary), var(--tertiary));
+      animation: wave-spin 9s linear infinite;
+      transition: top 0.65s cubic-bezier(0.22, 0.9, 0.24, 1);
+    }
+
+    .orb-water.second {
+      opacity: 0.45;
+      animation-duration: 13s;
+      animation-direction: reverse;
+      background: linear-gradient(135deg, var(--tertiary), var(--primary));
+    }
+
+    .orb-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--text);
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+      transition: color 0.3s ease;
+    }
+
+    .orb.filled .orb-inner {
+      color: #fff;
+      text-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .orb-percent {
+      font-size: clamp(3.2rem, 8vw, 4.6rem);
+      font-weight: 850;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .orb-label {
+      margin-top: 6px;
+      font-size: 0.72rem;
+      font-weight: 750;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .orb-caption {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    .orb-caption svg {
+      width: 16px;
+      height: 16px;
+      color: var(--tertiary);
+    }
+
+    .generator-copy h2 {
+      margin: 0 0 12px;
+      font-size: clamp(1.8rem, 3.4vw, 2.55rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .generator-copy > p {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    .generate-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .generate-row .btn-primary {
+      flex: 1 1 220px;
+    }
+
+    .api-link {
+      min-height: 52px;
+      padding-inline: 18px;
+      border-radius: 999px;
+      border: 1px dashed color-mix(in srgb, var(--outline) 40%, transparent);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 650;
+    }
+
+    .api-link:hover {
+      color: var(--text);
+      background: var(--surface-2);
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 26px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--tertiary);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--tertiary) 16%, transparent);
+    }
+
+    .status.busy .status-dot {
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .status.error {
+      color: var(--error);
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid color-mix(in srgb, var(--outline) 25%, transparent);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .notice.error {
+      border-color: color-mix(in srgb, var(--error) 42%, transparent);
+      background: color-mix(in srgb, var(--error) 9%, var(--surface));
+      color: var(--error);
+    }
+
+    .notice[hidden],
+    .result[hidden] {
+      display: none;
+    }
+
+    .result {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+      border-radius: 22px;
+      background: color-mix(in srgb, var(--success) 8%, var(--surface));
+      animation: rise 0.35s ease both;
+    }
+
+    .result-check {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--success) 18%, transparent);
+      color: var(--success);
+    }
+
+    .result-check svg {
+      width: 23px;
+      height: 23px;
+    }
+
+    .result-meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .result-meta strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.93rem;
+    }
+
+    .result-meta span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .result .btn {
+      min-height: 44px;
+      padding: 9px 18px;
+      font-size: 0.85rem;
+    }
+
+    .privacy-note {
+      display: flex;
+      gap: 9px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 0.79rem;
+    }
+
+    .privacy-note svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      margin-top: 2px;
+      color: var(--tertiary);
+    }
+
+    .api-hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.74rem;
+      opacity: 0.8;
+      word-break: break-all;
+    }
+
+    .section {
+      padding: 70px 0;
+      scroll-margin-top: 90px;
+    }
+
+    .section-head {
+      max-width: 680px;
+      margin: 0 auto 38px;
+      text-align: center;
+    }
+
+    .section-kicker {
+      color: var(--tertiary);
+      font-size: 0.78rem;
+      font-weight: 750;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .section-head h2 {
+      margin: 10px 0 12px;
+      font-size: clamp(1.9rem, 4vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: -0.045em;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .feature {
+      padding: 28px;
+      border: 1px solid color-mix(in srgb, var(--outline) 16%, transparent);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .feature:hover {
+      transform: translateY(-4px);
+      border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+
+    .feature-icon {
+      display: grid;
+      place-items: center;
+      width: 50px;
+      height: 50px;
+      margin-bottom: 20px;
+      border-radius: 17px;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .feature h3 {
+      margin: 0 0 8px;
+      font-size: 1.12rem;
+      letter-spacing: -0.02em;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      counter-reset: steps;
+    }
+
+    .step {
+      position: relative;
+      padding: 28px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(150deg, var(--surface), var(--surface-2));
+      border: 1px solid color-mix(in srgb, var(--outline) 14%, transparent);
+    }
+
+    .step-number {
+      display: block;
+      margin-bottom: 34px;
+      font-size: 2.6rem;
+      font-weight: 850;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      background: linear-gradient(100deg, var(--primary), var(--tertiary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .step h3 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .cta {
+      padding: 20px 0 90px;
+    }
+
+    .cta-inner {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: clamp(28px, 5vw, 54px);
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(120deg, var(--primary-container), var(--tertiary-container));
+      color: var(--on-primary-container);
+    }
+
+    .cta-inner::after {
+      content: "";
+      position: absolute;
+      right: -40px;
+      bottom: -120px;
+      width: 280px;
+      height: 280px;
+      border: 34px solid color-mix(in srgb, var(--tertiary) 35%, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .cta-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 620px;
+    }
+
+    .cta-copy h2 {
+      margin: 0 0 8px;
+      font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.045em;
+    }
+
+    .cta-copy p {
+      margin: 0;
+      opacity: 0.75;
+    }
+
+    .cta .btn {
+      position: relative;
+      z-index: 1;
+      background: var(--on-primary-container);
+      color: var(--primary-container);
+    }
+
+    .site-footer {
+      padding: 34px 0 42px;
+      border-top: 1px solid color-mix(in srgb, var(--outline) 16%, transparent);
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 18px;
+      font-size: 0.85rem;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+      text-decoration: underline;
+    }
+
+    .footer-legal {
+      width: 100%;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 0.74rem;
+      opacity: 0.72;
+    }
+
+    dialog {
+      width: min(480px, calc(100% - 32px));
+      padding: 0;
+      border: 0;
+      border-radius: 30px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(5px);
+    }
+
+    .dialog-inner {
+      padding: 28px;
+    }
+
+    .dialog-inner h2 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+
+    .dialog-inner p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .dialog-inner label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .dialog-input {
+      width: 100%;
+      min-height: 50px;
+      padding: 12px 15px;
+      border: 1px solid color-mix(in srgb, var(--outline) 45%, transparent);
+      border-radius: 15px;
+      background: var(--surface-2);
+      color: var(--text);
+      outline: none;
+    }
+
+    .dialog-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .dialog-actions .btn {
+      min-height: 44px;
+      padding: 9px 18px;
+      font-size: 0.86rem;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 100;
+      max-width: calc(100% - 32px);
+      padding: 12px 18px;
+      border: 1px solid color-mix(in srgb, var(--outline) 22%, transparent);
+      border-radius: 999px;
+      background: var(--surface-3);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: 0.86rem;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 16px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @keyframes wave-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--tertiary) 15%, transparent);
+        opacity: 1;
+      }
+      50% {
+        box-shadow: 0 0 0 9px color-mix(in srgb, var(--tertiary) 6%, transparent);
+        opacity: 0.65;
+      }
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .generator-card {
+        grid-template-columns: 1fr;
+      }
+
+      .orb-wrap {
+        order: 2;
+      }
+
+      .generator-copy {
+        order: 1;
+      }
+
+      .features,
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .feature,
+      .step {
+        padding: 24px;
+      }
+
+      .step-number {
+        margin-bottom: 18px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .container {
+        width: min(var(--max), calc(100% - 32px));
+      }
+
+      .nav {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 66px;
+      }
+
+      .header-telegram span {
+        display: none;
+      }
+
+      .header-telegram {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        justify-content: center;
+      }
+
+      .header-telegram svg {
+        width: 19px;
+        height: 19px;
+      }
+
+      .result {
+        flex-wrap: wrap;
+      }
+
+      .result .btn {
+        width: 100%;
+      }
+
+      .cta-inner {
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 {
+        letter-spacing: -0.045em;
+      }
+
+      .hero-actions .btn {
+        width: 100%;
+      }
+
+      .generator-card {
+        border-radius: 30px;
+      }
+
+      .orb {
+        width: min(260px, 74vw);
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#generator">Перейти к генератору</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#" aria-label="Vorb — на главную">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M5 19.5c3.7-5.5 7.3-5.5 11 0s7.3 5.5 11 0" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span>Vorb<span class="brand-dot">.</span></span>
+      </a>
+
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="#generator">Генератор</a>
+        <a href="#features">Возможности</a>
+        <a href="#how">Как это работает</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="icon-button" id="themeToggle" type="button" aria-label="Переключить тему">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <a class="header-telegram" href="https://t.me/VorbVpn" target="_blank" rel="noopener noreferrer" aria-label="Telegram Vorb">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m21 4-3.4 15.2c-.2.9-.8 1.1-1.6.7l-4.4-3.2-2.1 2c-.2.2-.4.4-.9.4l.3-4.4 8.1-7.3c.4-.3-.1-.5-.5-.2L7.5 13l-4.2-1.3c-.9-.3-.9-.9.2-1.3L19.7 3c.7-.3 1.4.2 1.3 1Z" fill="currentColor"/>
+          </svg>
+          <span>Telegram</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-badge"><span class="dot"></span> Cloudflare WARP · WireGuard</div>
+        <h1>Свобода в каждой <span class="gradient-text">волне</span></h1>
+        <p>Vorb создаёт готовый WireGuard-профиль для Cloudflare WARP за несколько секунд. Без аккаунта, без лишних настроек — только скорость и приватность.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#generator">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 9.5-12H13l0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Создать конфиг
+          </a>
+          <a class="btn btn-tonal" href="https://t.me/VorbVpn" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 4-3.4 15.2c-.2.9-.8 1.1-1.6.7l-4.4-3.2-2.1 2c-.2.2-.4.4-.9.4l.3-4.4 8.1-7.3c.4-.3-.1-.5-.5-.2L7.5 13l-4.2-1.3c-.9-.3-.9-.9.2-1.3L19.7 3c.7-.3 1.4.2 1.3 1Z" fill="currentColor"/></svg>
+            Наш Telegram
+          </a>
+        </div>
+        <div class="hero-note">
+          <span><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Без регистрации</span>
+          <span><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> 1 конфиг в минуту</span>
+          <span><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Android-приложение</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="generator" id="generator">
+      <div class="container">
+        <div class="generator-card">
+          <div class="orb-wrap">
+            <div class="orb" id="orb" role="img" aria-label="Прогресс генерации конфига">
+              <div class="orb-water"></div>
+              <div class="orb-water second"></div>
+              <div class="orb-inner">
+                <span class="orb-percent" id="percent">0%</span>
+                <span class="orb-label" id="orbLabel">готов</span>
+              </div>
+            </div>
+            <div class="orb-caption">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" opacity=".25"/><path d="M4 16c2.7-4 5.3-4 8 0s5.3 4 8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              Живая волна генерации
+            </div>
+          </div>
+
+          <div class="generator-copy">
+            <h2>Ваш конфиг WARP</h2>
+            <p>Нажмите кнопку — Vorb зарегистрирует устройство в Cloudflare WARP, соберёт WireGuard-профиль и отдаст готовый <strong>.conf</strong> файл.</p>
+
+            <div class="generate-row">
+              <button class="btn btn-primary" id="generateBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 9.5-12H13l0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                <span id="generateLabel">Сгенерировать конфиг</span>
+              </button>
+              <button class="api-link" id="apiBtn" type="button" title="Настроить адрес backend">API</button>
+            </div>
+
+            <div class="status" id="status" aria-live="polite">
+              <span class="status-dot"></span>
+              <span id="statusText">Готово к работе. Лимит — 1 конфиг в минуту.</span>
+            </div>
+
+            <div class="result" id="result" hidden>
+              <div class="result-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="result-meta">
+                <strong id="resultName">vorb-warp.conf</strong>
+                <span>Готов к импорту в WireGuard</span>
+              </div>
+              <button class="btn btn-primary" id="downloadBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Скачать .conf
+              </button>
+            </div>
+
+            <div class="notice error" id="errorBox" role="alert" hidden></div>
+
+            <div class="privacy-note">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span>В конфиге есть приватный ключ. Не пересылайте файл другим людям и храните его в надёжном месте.</span>
+            </div>
+            <div class="api-hint" id="apiHint"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Почему Vorb</div>
+          <h2>Всё, что нужно. Ничего лишнего.</h2>
+          <p>Мы собрали простой путь от нажатия кнопки до подключения — без аккаунтов, подписок и сложных инструкций.</p>
+        </div>
+        <div class="features">
+          <article class="feature">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4.5 13.5H11l-1 8.5 9.5-12H13l0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>Скорость WARP</h3>
+            <p>Cloudflare WARP выбирает оптимальный маршрут и работает поверх современного протокола WireGuard.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.6 3 8.1 7 10 4-1.9 7-5.4 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>Приватный ключ</h3>
+            <p>Каждый конфиг создаётся в изолированной временной папке. Мы не храним профили и не передаём их третьим лицам.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2.5" width="12" height="19" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M10 5.5h4M11 18.5h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <h3>Android рядом</h3>
+            <p>Импортируйте .conf в приложение Vorb, нажмите одну кнопку — и туннель уже работает.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Как это работает</div>
+          <h2>Три шага до свободы</h2>
+          <p>Никаких настроек сервера, ключей и терминала. Всё уже под капотом.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <span class="step-number">01</span>
+            <h3>Создайте конфиг</h3>
+            <p>Нажмите «Сгенерировать» и дождитесь, пока волна заполнит круг. Обычно это занимает несколько секунд.</p>
+          </article>
+          <article class="step">
+            <span class="step-number">02</span>
+            <h3>Скачайте .conf</h3>
+            <p>Получите файл <strong>vorb-warp.conf</strong> с приватным ключом и параметрами WARP.</p>
+          </article>
+          <article class="step">
+            <span class="step-number">03</span>
+            <h3>Импортируйте в Vorb</h3>
+            <p>Откройте приложение, перейдите во вкладку «Импорт», вставьте конфиг или выберите файл и подключитесь.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="container">
+        <div class="cta-inner">
+          <div class="cta-copy">
+            <h2>Присоединяйтесь к волне</h2>
+            <p>Новости, обновления и поддержка — в Telegram-канале Vorb.</p>
+          </div>
+          <a class="btn" href="https://t.me/VorbVpn" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 4-3.4 15.2c-.2.9-.8 1.1-1.6.7l-4.4-3.2-2.1 2c-.2.2-.4.4-.9.4l.3-4.4 8.1-7.3c.4-.3-.1-.5-.5-.2L7.5 13l-4.2-1.3c-.9-.3-.9-.9.2-1.3L19.7 3c.7-.3 1.4.2 1.3 1Z" fill="currentColor"/></svg>
+            Открыть Telegram
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="brand-mark" style="width:30px;height:30px;border-radius:10px" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" style="width:19px;height:19px">
+            <path d="M5 19.5c3.7-5.5 7.3-5.5 11 0s7.3 5.5 11 0" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span>© 2026 Vorb. Свободный интернет.</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://t.me/VorbVpn" target="_blank" rel="noopener noreferrer">Telegram</a>
+        <a href="#generator">Генератор</a>
+        <a href="#how">Инструкция</a>
+      </div>
+      <p class="footer-legal">Vorb не связан с Cloudflare. WARP — сервис Cloudflare. Используйте VPN в соответствии с законодательством вашей страны.</p>
+    </div>
+  </footer>
+
+  <dialog id="apiDialog" aria-labelledby="apiDialogTitle">
+    <div class="dialog-inner">
+      <h2 id="apiDialogTitle">Адрес backend</h2>
+      <p>Укажите URL сервера с <code>server.js</code>, если сайт открыт на GitHub Pages или другом статическом хостинге. Для локального запуска оставьте поле пустым.</p>
+      <label for="apiInput">API base URL</label>
+      <input class="dialog-input" id="apiInput" type="url" inputmode="url" placeholder="https://vorb-api.example.com" autocomplete="off" spellcheck="false">
+      <div class="dialog-actions">
+        <button class="btn btn-tonal" id="apiCancel" type="button">Отмена</button>
+        <button class="btn btn-primary" id="apiSave" type="button">Сохранить</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const $ = (selector) => document.querySelector(selector);
+      const API_KEY = 'vorb-api-base';
+      const THEME_KEY = 'vorb-theme';
+
+      const els = {
+        orb: $('#orb'),
+        percent: $('#percent'),
+        orbLabel: $('#orbLabel'),
+        generateBtn: $('#generateBtn'),
+        generateLabel: $('#generateLabel'),
+        status: $('#status'),
+        statusText: $('#statusText'),
+        result: $('#result'),
+        resultName: $('#resultName'),
+        downloadBtn: $('#downloadBtn'),
+        errorBox: $('#errorBox'),
+        apiBtn: $('#apiBtn'),
+        apiHint: $('#apiHint'),
+        apiDialog: $('#apiDialog'),
+        apiInput: $('#apiInput'),
+        apiSave: $('#apiSave'),
+        apiCancel: $('#apiCancel'),
+        toast: $('#toast'),
+        themeToggle: $('#themeToggle'),
+      };
+
+      const state = {
+        busy: false,
+        progress: 0,
+        timer: null,
+        config: null,
+        filename: 'vorb-warp.conf',
+        toastTimer: null,
+      };
+
+      function apiBase() {
+        const fromWindow = typeof window.VORB_API_BASE === 'string' ? window.VORB_API_BASE : '';
+        const fromQuery = new URLSearchParams(window.location.search).get('api') || '';
+        let stored = '';
+        try {
+          stored = localStorage.getItem(API_KEY) || '';
+        } catch (e) {
+          stored = '';
+        }
+        return (fromWindow || fromQuery || stored).trim().replace(/\/+$/, '');
+      }
+
+      function isStaticHosting() {
+        return window.location.protocol === 'file:' || /\.github\.io$/i.test(window.location.hostname);
+      }
+
+      function setProgress(value) {
+        state.progress = Math.max(0, Math.min(100, value));
+        els.percent.textContent = Math.round(state.progress) + '%';
+        els.orb.style.setProperty('--fill', (100 - state.progress * 1.7) + '%');
+        els.orb.classList.toggle('filled', state.progress > 45);
+        els.orbLabel.textContent = state.progress >= 100 ? 'готово' : state.progress > 0 ? 'генерация' : 'готов';
+      }
+
+      function setStatus(text, kind) {
+        els.statusText.textContent = text;
+        els.status.className = 'status' + (kind ? ' ' + kind : '');
+      }
+
+      function showError(message) {
+        els.errorBox.textContent = message;
+        els.errorBox.hidden = false;
+        setStatus('Не удалось создать конфиг', 'error');
+      }
+
+      function hideError() {
+        els.errorBox.hidden = true;
+        els.errorBox.textContent = '';
+      }
+
+      function showToast(message) {
+        els.toast.textContent = message;
+        els.toast.classList.add('show');
+        clearTimeout(state.toastTimer);
+        state.toastTimer = setTimeout(function () {
+          els.toast.classList.remove('show');
+        }, 3200);
+      }
+
+      function setBusy(busy) {
+        state.busy = busy;
+        els.generateBtn.disabled = busy;
+        els.generateLabel.textContent = busy ? 'Генерируем…' : 'Сгенерировать конфиг';
+        els.status.classList.toggle('busy', busy);
+      }
+
+      function startProgress() {
+        const startedAt = Date.now();
+        setProgress(3);
+        clearInterval(state.timer);
+        state.timer = setInterval(function () {
+          const elapsed = Date.now() - startedAt;
+          const next = 92 - 89 * Math.exp(-elapsed / 7500);
+          setProgress(Math.max(state.progress, next));
+          if (state.progress < 34) {
+            setStatus('Регистрируем устройство в Cloudflare WARP…', 'busy');
+          } else if (state.progress < 68) {
+            setStatus('Генерируем ключи WireGuard…', 'busy');
+          } else {
+            setStatus('Собираем и проверяем профиль…', 'busy');
+          }
+        }, 130);
+      }
+
+      function finishProgress() {
+        clearInterval(state.timer);
+        state.timer = null;
+        setProgress(100);
+        setStatus('Конфиг готов. Скачайте файл и импортируйте его в Vorb.', 'success');
+      }
+
+      function resetProgress() {
+        clearInterval(state.timer);
+        state.timer = null;
+        setProgress(0);
+      }
+
+      async function generate() {
+        if (state.busy) return;
+
+        const base = apiBase();
+
+        if (isStaticHosting() && !base) {
+          showError('Сайт открыт на статическом хостинге, а backend не настроен. Нажмите «API» и укажите адрес запущенного server.js.');
+          showToast('Укажите адрес backend в настройках API');
+          return;
+        }
+
+        hideError();
+        els.result.hidden = true;
+        setBusy(true);
+        startProgress();
+
+        try {
+          const response = await fetch((base || '') + '/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+          });
+
+          let data = null;
+          try {
+            data = await response.json();
+          } catch (parseError) {
+            data = null;
+          }
+
+          if (!response.ok) {
+            throw new Error((data && (data.error || data.details)) || 'Сервер вернул HTTP ' + response.status);
+          }
+          if (!data || typeof data.config !== 'string' || !data.config.trim()) {
+            throw new Error('Сервер вернул пустой или некорректный конфиг.');
+          }
+
+          state.config = data.config;
+          state.filename = String(data.filename || 'vorb-warp.conf').replace(/[^a-zA-Z0-9._-]/g, '-');
+          finishProgress();
+          els.resultName.textContent = state.filename;
+          els.result.hidden = false;
+          showToast('Конфиг готов к скачиванию');
+        } catch (error) {
+          resetProgress();
+          showError(error && error.message ? error.message : 'Не удалось получить конфиг. Попробуйте ещё раз.');
+          showToast('Ошибка генерации');
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      function download() {
+        if (!state.config) return;
+        const blob = new Blob([state.config], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = state.filename || 'vorb-warp.conf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 1200);
+        showToast('Файл скачан');
+      }
+
+      function updateApiHint() {
+        const base = apiBase();
+        if (base) {
+          els.apiHint.textContent = 'Backend: ' + base;
+        } else if (isStaticHosting()) {
+          els.apiHint.textContent = 'Backend не настроен — нажмите «API», чтобы указать адрес server.js.';
+        } else {
+          els.apiHint.textContent = 'Backend: этот же адрес (server.js)';
+        }
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        try {
+          localStorage.setItem(THEME_KEY, theme);
+        } catch (e) {
+          /* storage may be disabled */
+        }
+        els.themeToggle.setAttribute(
+          'aria-label',
+          theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'
+        );
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#141218' : '#fdf7ff');
+      }
+
+      els.generateBtn.addEventListener('click', generate);
+      els.downloadBtn.addEventListener('click', download);
+
+      els.themeToggle.addEventListener('click', function () {
+        applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      });
+
+      els.apiBtn.addEventListener('click', function () {
+        els.apiInput.value = apiBase();
+        if (typeof els.apiDialog.showModal === 'function') {
+          els.apiDialog.showModal();
+        } else {
+          els.apiDialog.setAttribute('open', '');
+        }
+        els.apiInput.focus();
+      });
+
+      els.apiSave.addEventListener('click', function () {
+        const value = els.apiInput.value.trim().replace(/\/+$/, '');
+        try {
+          if (value) localStorage.setItem(API_KEY, value);
+          else localStorage.removeItem(API_KEY);
+        } catch (e) {
+          showToast('Не удалось сохранить настройку');
+        }
+        els.apiDialog.close();
+        updateApiHint();
+        hideError();
+        setStatus('Адрес backend обновлён.', '');
+        showToast('Настройки API сохранены');
+      });
+
+      els.apiCancel.addEventListener('click', function () {
+        els.apiDialog.close();
+      });
+
+      els.apiDialog.addEventListener('click', function (event) {
+        if (event.target === els.apiDialog) els.apiDialog.close();
+      });
+
+      window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && els.apiDialog.open) els.apiDialog.close();
+      });
+
+      applyTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+      updateApiHint();
+      setProgress(0);
+
+      // Re-check API availability once the page is loaded, so the hint is accurate.
+      window.addEventListener('load', updateApiHint);
+    })();
+  </script>
+</body>
+</html>
