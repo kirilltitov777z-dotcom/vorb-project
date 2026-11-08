@@ -1249,7 +1249,7 @@
 
           <div class="generator-copy">
             <h2>Ваш конфиг WARP</h2>
-            <p>Нажмите кнопку — Vorb зарегистрирует устройство в Cloudflare WARP, соберёт WireGuard-профиль и отдаст готовый <strong>.conf</strong> файл.</p>
+            <p>В приложении Vorb конфиг создаётся автоматически при подключении. На сайте с запущенным <code>server.js</code> кнопка сразу соберёт готовый <strong>.conf</strong>.</p>
 
             <div class="generate-row">
               <button class="btn btn-primary" id="generateBtn" type="button">
@@ -1401,7 +1401,6 @@
       'use strict';
 
       const $ = (selector) => document.querySelector(selector);
-      const LEGACY_API_KEY = 'vorb-api-base';
       const THEME_KEY = 'vorb-theme';
       const APK_URL = 'https://github.com/kirilltitov777z-dotcom/vorb-project/releases/latest/download/vorb-debug.apk';
 
@@ -1435,13 +1434,7 @@
       function apiBase() {
         const fromWindow = typeof window.VORB_API_BASE === 'string' ? window.VORB_API_BASE : '';
         const fromQuery = new URLSearchParams(window.location.search).get('api') || '';
-        let stored = '';
-        try {
-          stored = localStorage.getItem(LEGACY_API_KEY) || '';
-        } catch (e) {
-          stored = '';
-        }
-        return (fromWindow || fromQuery || stored).trim().replace(/\/+$/, '');
+        return (fromWindow || fromQuery).trim().replace(/\/+$/, '');
       }
 
       function isStaticHosting() {
