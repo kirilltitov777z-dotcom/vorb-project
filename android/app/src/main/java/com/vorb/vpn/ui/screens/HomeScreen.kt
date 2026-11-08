@@ -28,8 +28,8 @@ import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vorb.vpn.VorbUiState
+import com.vorb.vpn.ui.VorbLinks
 import java.util.Locale
 
 @Composable
@@ -76,7 +77,10 @@ fun HomeScreen(
             .padding(top = 14.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        HomeHeader(onTelegram = { uriHandler.openUri("https://t.me/VorbVpn") })
+        HomeHeader(
+            onWebsite = { uriHandler.openUri(VorbLinks.WEBSITE) },
+            onTelegram = { uriHandler.openUri(VorbLinks.TELEGRAM) },
+        )
 
         ConnectionCard(
             state = state,
@@ -108,12 +112,15 @@ fun HomeScreen(
             onOpenImport = onOpenImport,
         )
 
-        HowItWorksCard(onTelegram = { uriHandler.openUri("https://t.me/VorbVpn") })
+        HowItWorksCard(
+            onWebsite = { uriHandler.openUri(VorbLinks.WEBSITE) },
+            onTelegram = { uriHandler.openUri(VorbLinks.TELEGRAM) },
+        )
     }
 }
 
 @Composable
-private fun HomeHeader(onTelegram: () -> Unit) {
+private fun HomeHeader(onWebsite: () -> Unit, onTelegram: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -156,6 +163,14 @@ private fun HomeHeader(onTelegram: () -> Unit) {
             )
         }
 
+        IconButton(onClick = onWebsite) {
+            Icon(
+                imageVector = Icons.Rounded.Public,
+                contentDescription = "Сайт Vorb",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         IconButton(onClick = onTelegram) {
             Icon(
                 imageVector = Icons.Rounded.Send,
@@ -173,27 +188,24 @@ private fun ConnectionCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val statusTitle = when {
+        state.busy && state.generating -> "Создаём конфиг…"
         state.busy -> "Соединение…"
         state.connected -> "Подключено"
         else -> "Отключено"
     }
     val statusSubtitle = when {
+        state.busy && state.generating -> "Регистрируем устройство в Cloudflare WARP"
         state.busy -> "Применяем настройки WireGuard"
         state.connected -> "Трафик защищён туннелем WARP"
-        state.config == null -> "Импортируйте конфиг, чтобы начать"
+        state.config == null -> "Нажмите «Подключиться» — конфиг создастся сам"
         else -> "Готово к безопасному подключению"
     }
     val buttonLabel = when {
         state.busy -> "Подождите…"
         state.connected -> "Отключиться"
-        state.config == null -> "Импортировать конфиг"
         else -> "Подключиться"
     }
-    val buttonIcon = if (state.config == null && !state.connected) {
-        Icons.Rounded.FileDownload
-    } else {
-        Icons.Rounded.PowerSettingsNew
-    }
+    val buttonIcon = Icons.Rounded.PowerSettingsNew
 
     Box(
         modifier = Modifier
@@ -469,7 +481,7 @@ private fun ConfigCard(
                 )
                 Spacer(Modifier.width(9.dp))
                 Text(
-                    text = if (hasConfig) "Конфиг загружен" else "Конфиг не импортирован",
+                    text = if (hasConfig) "Конфиг готов" else "Конфиг создастся сам",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
@@ -481,7 +493,8 @@ private fun ConfigCard(
 
             if (summary.isEmpty) {
                 Text(
-                    text = "Импортируйте .conf из генератора Vorb или вставьте текст конфига вручную.",
+                    text = "При первом подключении Vorb сам зарегистрирует устройство в Cloudflare WARP. " +
+                        "Можно также импортировать готовый .conf вручную.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -518,7 +531,7 @@ private fun InfoLine(label: String, value: String) {
 }
 
 @Composable
-private fun HowItWorksCard(onTelegram: () -> Unit) {
+private fun HowItWorksCard(onWebsite: () -> Unit, onTelegram: () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -537,13 +550,26 @@ private fun HowItWorksCard(onTelegram: () -> Unit) {
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "1. Сгенерируйте .conf на сайте Vorb.\n" +
-                    "2. Импортируйте его во вкладке «Импорт».\n" +
-                    "3. Нажмите «Подключиться» и разрешите VPN.",
+                text = "1. Нажмите «Подключиться» — Vorb сам создаст конфиг WARP.\n" +
+                    "2. Разрешите VPN, когда система спросит.\n" +
+                    "3. Готово: трафик идёт через защищённый туннель.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(2.dp))
+            OutlinedButton(
+                onClick = onWebsite,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Public,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Сайт Vorb")
+            }
             OutlinedButton(
                 onClick = onTelegram,
                 modifier = Modifier.fillMaxWidth(),

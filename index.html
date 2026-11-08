@@ -557,21 +557,43 @@
       flex: 1 1 220px;
     }
 
-    .api-link {
-      min-height: 52px;
-      padding-inline: 18px;
-      border-radius: 999px;
-      border: 1px dashed color-mix(in srgb, var(--outline) 40%, transparent);
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 0.84rem;
-      font-weight: 650;
+    .app-cta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 1px solid color-mix(in srgb, var(--outline) 24%, transparent);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
     }
 
-    .api-link:hover {
-      color: var(--text);
-      background: var(--surface-2);
+    .app-cta > div {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 180px;
+    }
+
+    .app-cta strong {
+      font-size: 0.92rem;
+    }
+
+    .app-cta span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .app-cta .btn {
+      min-height: 44px;
+      padding: 9px 18px;
+      font-size: 0.86rem;
+    }
+
+    .app-cta[hidden] {
+      display: none;
     }
 
     .status {
@@ -692,14 +714,6 @@
       flex: 0 0 auto;
       margin-top: 2px;
       color: var(--tertiary);
-    }
-
-    .api-hint {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 0.74rem;
-      opacity: 0.8;
-      word-break: break-all;
     }
 
     .section {
@@ -1202,6 +1216,10 @@
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 4-3.4 15.2c-.2.9-.8 1.1-1.6.7l-4.4-3.2-2.1 2c-.2.2-.4.4-.9.4l.3-4.4 8.1-7.3c.4-.3-.1-.5-.5-.2L7.5 13l-4.2-1.3c-.9-.3-.9-.9.2-1.3L19.7 3c.7-.3 1.4.2 1.3 1Z" fill="currentColor"/></svg>
             Наш Telegram
           </a>
+          <a class="btn btn-tonal" href="https://github.com/kirilltitov777z-dotcom/vorb-project/releases/latest/download/vorb-debug.apk">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Скачать приложение
+          </a>
         </div>
         <div class="hero-note">
           <span><svg viewBox="0 0 24 24" fill="none"><path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Без регистрации</span>
@@ -1238,7 +1256,6 @@
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 9.5-12H13l0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                 <span id="generateLabel">Сгенерировать конфиг</span>
               </button>
-              <button class="api-link" id="apiBtn" type="button" title="Настроить адрес backend">API</button>
             </div>
 
             <div class="status" id="status" aria-live="polite">
@@ -1266,7 +1283,17 @@
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
               <span>В конфиге есть приватный ключ. Не пересылайте файл другим людям и храните его в надёжном месте.</span>
             </div>
-            <div class="api-hint" id="apiHint"></div>
+
+            <div class="app-cta" id="appCta">
+              <div>
+                <strong>Без API и настроек</strong>
+                <span>Приложение Vorb само создаёт конфиг WARP при подключении.</span>
+              </div>
+              <a class="btn btn-tonal" href="https://github.com/kirilltitov777z-dotcom/vorb-project/releases/latest/download/vorb-debug.apk">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Скачать APK
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -1367,19 +1394,6 @@
     </div>
   </footer>
 
-  <dialog id="apiDialog" aria-labelledby="apiDialogTitle">
-    <div class="dialog-inner">
-      <h2 id="apiDialogTitle">Адрес backend</h2>
-      <p>Укажите URL сервера с <code>server.js</code>, если сайт открыт на GitHub Pages или другом статическом хостинге. Для локального запуска оставьте поле пустым.</p>
-      <label for="apiInput">API base URL</label>
-      <input class="dialog-input" id="apiInput" type="url" inputmode="url" placeholder="https://vorb-api.example.com" autocomplete="off" spellcheck="false">
-      <div class="dialog-actions">
-        <button class="btn btn-tonal" id="apiCancel" type="button">Отмена</button>
-        <button class="btn btn-primary" id="apiSave" type="button">Сохранить</button>
-      </div>
-    </div>
-  </dialog>
-
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -1387,8 +1401,9 @@
       'use strict';
 
       const $ = (selector) => document.querySelector(selector);
-      const API_KEY = 'vorb-api-base';
+      const LEGACY_API_KEY = 'vorb-api-base';
       const THEME_KEY = 'vorb-theme';
+      const APK_URL = 'https://github.com/kirilltitov777z-dotcom/vorb-project/releases/latest/download/vorb-debug.apk';
 
       const els = {
         orb: $('#orb'),
@@ -1402,12 +1417,7 @@
         resultName: $('#resultName'),
         downloadBtn: $('#downloadBtn'),
         errorBox: $('#errorBox'),
-        apiBtn: $('#apiBtn'),
-        apiHint: $('#apiHint'),
-        apiDialog: $('#apiDialog'),
-        apiInput: $('#apiInput'),
-        apiSave: $('#apiSave'),
-        apiCancel: $('#apiCancel'),
+        appCta: $('#appCta'),
         toast: $('#toast'),
         themeToggle: $('#themeToggle'),
       };
@@ -1419,6 +1429,7 @@
         config: null,
         filename: 'vorb-warp.conf',
         toastTimer: null,
+        hasBackend: null,
       };
 
       function apiBase() {
@@ -1426,7 +1437,7 @@
         const fromQuery = new URLSearchParams(window.location.search).get('api') || '';
         let stored = '';
         try {
-          stored = localStorage.getItem(API_KEY) || '';
+          stored = localStorage.getItem(LEGACY_API_KEY) || '';
         } catch (e) {
           stored = '';
         }
@@ -1435,6 +1446,32 @@
 
       function isStaticHosting() {
         return window.location.protocol === 'file:' || /\.github\.io$/i.test(window.location.hostname);
+      }
+
+      // The site can generate configs only when server.js is reachable.
+      // On GitHub Pages there is no backend, so the app does the job.
+      async function backendAvailable() {
+        if (state.hasBackend !== null) return state.hasBackend;
+        if (apiBase()) {
+          state.hasBackend = true;
+          return true;
+        }
+        if (isStaticHosting()) {
+          state.hasBackend = false;
+          return false;
+        }
+        try {
+          const response = await fetch('/api/health', { cache: 'no-store' });
+          if (!response.ok) {
+            state.hasBackend = false;
+          } else {
+            const data = await response.json().catch(() => null);
+            state.hasBackend = !!(data && data.ok);
+          }
+        } catch (error) {
+          state.hasBackend = false;
+        }
+        return state.hasBackend;
       }
 
       function setProgress(value) {
@@ -1511,13 +1548,12 @@
       async function generate() {
         if (state.busy) return;
 
-        const base = apiBase();
-
-        if (isStaticHosting() && !base) {
-          showError('Сайт открыт на статическом хостинге, а backend не настроен. Нажмите «API» и укажите адрес запущенного server.js.');
-          showToast('Укажите адрес backend в настройках API');
+        if (!(await backendAvailable())) {
+          window.location.assign(APK_URL);
           return;
         }
+
+        const base = apiBase();
 
         hideError();
         els.result.hidden = true;
@@ -1576,15 +1612,15 @@
         showToast('Файл скачан');
       }
 
-      function updateApiHint() {
-        const base = apiBase();
-        if (base) {
-          els.apiHint.textContent = 'Backend: ' + base;
-        } else if (isStaticHosting()) {
-          els.apiHint.textContent = 'Backend не настроен — нажмите «API», чтобы указать адрес server.js.';
-        } else {
-          els.apiHint.textContent = 'Backend: этот же адрес (server.js)';
+      async function configureMode() {
+        if (await backendAvailable()) {
+          els.appCta.hidden = true;
+          setStatus('Готово к работе. Лимит — 1 конфиг в минуту.', '');
+          return;
         }
+        els.appCta.hidden = false;
+        els.generateLabel.textContent = 'Скачать приложение';
+        setStatus('Статический режим: конфиг создаётся в приложении Vorb.', '');
       }
 
       function applyTheme(theme) {
@@ -1609,49 +1645,9 @@
         applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
       });
 
-      els.apiBtn.addEventListener('click', function () {
-        els.apiInput.value = apiBase();
-        if (typeof els.apiDialog.showModal === 'function') {
-          els.apiDialog.showModal();
-        } else {
-          els.apiDialog.setAttribute('open', '');
-        }
-        els.apiInput.focus();
-      });
-
-      els.apiSave.addEventListener('click', function () {
-        const value = els.apiInput.value.trim().replace(/\/+$/, '');
-        try {
-          if (value) localStorage.setItem(API_KEY, value);
-          else localStorage.removeItem(API_KEY);
-        } catch (e) {
-          showToast('Не удалось сохранить настройку');
-        }
-        els.apiDialog.close();
-        updateApiHint();
-        hideError();
-        setStatus('Адрес backend обновлён.', '');
-        showToast('Настройки API сохранены');
-      });
-
-      els.apiCancel.addEventListener('click', function () {
-        els.apiDialog.close();
-      });
-
-      els.apiDialog.addEventListener('click', function (event) {
-        if (event.target === els.apiDialog) els.apiDialog.close();
-      });
-
-      window.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && els.apiDialog.open) els.apiDialog.close();
-      });
-
       applyTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-      updateApiHint();
+      configureMode();
       setProgress(0);
-
-      // Re-check API availability once the page is loaded, so the hint is accurate.
-      window.addEventListener('load', updateApiHint);
     })();
   </script>
 </body>

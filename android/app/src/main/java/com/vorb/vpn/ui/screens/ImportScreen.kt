@@ -119,7 +119,7 @@ fun ImportScreen(
             ),
         ) {
             Text(
-                text = "Подойдёт конфиг из генератора Vorb или любой стандартный WireGuard .conf с секциями [Interface] и [Peer]. Файл хранится только на этом устройстве.",
+                text = "Импорт не обязателен: Vorb создаёт конфиг автоматически при подключении. Здесь можно вставить готовый .conf из генератора или любой стандартный WireGuard-конфиг с секциями [Interface] и [Peer]. Файл хранится только на этом устройстве.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),

@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vorb.vpn.VorbUiState
+import com.vorb.vpn.ui.VorbLinks
 import com.vorb.vpn.ui.components.ScreenHeader
 import com.vorb.vpn.ui.theme.ThemeMode
 
@@ -56,6 +58,7 @@ fun SettingsScreen(
     onThemeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onDeleteConfig: () -> Unit,
+    onRegenerateConfig: () -> Unit,
     onBack: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -177,11 +180,31 @@ fun SettingsScreen(
                 )
             } else {
                 Text(
-                    text = "Конфиг не импортирован.",
+                    text = "Конфиг ещё не создан — он появится при первом подключении.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
+            OutlinedButton(
+                onClick = onRegenerateConfig,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.connected && !state.busy,
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Создать новый конфиг WARP")
+            }
+            Text(
+                text = "Пригодится, если текущий конфиг перестал работать. Старый будет заменён.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             OutlinedButton(
                 onClick = { showDeleteDialog = true },
@@ -210,12 +233,26 @@ fun SettingsScreen(
         }
 
         SettingsCard(title = "О приложении") {
-            SettingValueRow(label = "Версия", value = "1.0.0")
+            SettingValueRow(label = "Версия", value = "1.1.0")
             SettingValueRow(label = "Протокол", value = "WireGuard / Cloudflare WARP")
             SettingValueRow(label = "Бренд", value = "Vorb")
 
             OutlinedButton(
-                onClick = { uriHandler.openUri("https://t.me/VorbVpn") },
+                onClick = { uriHandler.openUri(VorbLinks.WEBSITE) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Public,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Сайт Vorb")
+            }
+
+            OutlinedButton(
+                onClick = { uriHandler.openUri(VorbLinks.TELEGRAM) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
             ) {
@@ -230,7 +267,7 @@ fun SettingsScreen(
 
             TextButton(
                 onClick = {
-                    uriHandler.openUri("https://github.com/kirilltitov777z-dotcom/vorb-project")
+                    uriHandler.openUri(VorbLinks.GITHUB)
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {

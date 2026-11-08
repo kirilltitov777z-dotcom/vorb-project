@@ -1,6 +1,6 @@
 # Vorb
 
-**Vorb** — это генератор WireGuard-конфигов для Cloudflare WARP, одностраничный сайт и Android-клиент на Kotlin + Jetpack Compose + Material 3.
+**Vorb** — это генератор WireGuard-конфигов для Cloudflare WARP, одностраничный сайт и Android-клиент на Kotlin + Jetpack Compose + Material 3. Приложение создаёт конфиг **само, без API и ручного импорта**.
 
 - Сайт: [kirilltitov777z-dotcom.github.io/vorb-project](https://kirilltitov777z-dotcom.github.io/vorb-project/)
 - Telegram: [t.me/VorbVpn](https://t.me/VorbVpn)
@@ -79,11 +79,12 @@ Content-Type: application/json
 
 Сайт — один файл `index.html`. Workflow `.github/workflows/deploy-pages.yml` копирует его в артефакт и публикует на GitHub Pages.
 
-GitHub Pages — статический хостинг, поэтому для кнопки «Сгенерировать» нужен запущенный backend. Укажите его адрес одним из способов:
+GitHub Pages — статический хостинг и не умеет запускать Node.js. Поэтому на Pages кнопка генерации ведёт на скачивание приложения: **в приложении Vorb конфиг создаётся автоматически**, без API и импорта.
 
-1. Нажмите кнопку **API** в генераторе и сохраните URL (хранится в `localStorage`).
-2. Откройте сайт с параметром `?api=https://your-backend.example.com`.
-3. Задайте `window.VORB_API_BASE = 'https://your-backend.example.com'` перед подключением `index.html`.
+Если вы запускаете `server.js` сами, сайт сам находит backend на том же адресе — ничего настраивать не нужно. Для отдельного домена backend можно указать без всякого UI:
+
+1. Открыть сайт с параметром `?api=https://your-backend.example.com`.
+2. Задать `window.VORB_API_BASE = 'https://your-backend.example.com'` перед подключением `index.html`.
 
 При локальном запуске через `npm start` backend и сайт работают на одном адресе — настройка не нужна.
 
@@ -103,12 +104,18 @@ APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
 ### Экраны
 
 - **Главная** — подключение/отключение WireGuard, статистика трафика, статус конфига.
-- **Импорт** — вставка текста конфига или выбор `.conf` файла, проверка формата.
-- **Настройки** — светлая/тёмная/системная тема, динамические цвета Material You, удаление конфига, ссылки.
+- **Импорт** — необязательный ручной импорт `.conf` (текст или файл), проверка формата.
+- **Настройки** — тема, динамические цвета Material You, создание нового конфига, удаление, ссылки на сайт и Telegram.
 
-VPN-разрешение запрашивается системным диалогом Android. Используется официальная библиотека `com.wireguard.android:tunnel`.
+При первом нажатии «Подключиться» приложение само регистрирует устройство в Cloudflare WARP, генерирует ключи WireGuard и сохраняет конфиг на телефоне. Приватный ключ не покидает устройство. VPN-разрешение запрашивается системным диалогом Android. Используется официальная библиотека `com.wireguard.android:tunnel`.
 
-### Готовый APK из GitHub Actions
+### Готовый APK
+
+Самый простой способ — скачать последний APK из релиза:
+
+**https://github.com/kirilltitov777z-dotcom/vorb-project/releases/latest/download/vorb-debug.apk**
+
+Либо через Actions:
 
 1. Откройте репозиторий → вкладка **Actions**.
 2. Слева выберите **Build Android APK**.
@@ -117,12 +124,12 @@ VPN-разрешение запрашивается системным диал�
 5. Распакуйте архив — внутри `app-debug.apk`.
 6. Разрешите установку из неизвестных источников и установите APK на телефон.
 
-Артефакт хранится 30 дней. Сборка запускается при пуше в `main`, при изменениях в `android/` и вручную через **Run workflow**.
+Релиз обновляется автоматически при каждом пуше в `main`. Артефакт хранится 30 дней. Сборка запускается при пуше в `main`, при изменениях в `android/` и вручную через **Run workflow**.
 
 ## CI/CD
 
 - `.github/workflows/deploy-pages.yml` — публикует `index.html` на GitHub Pages при пуше в `main`.
-- `.github/workflows/build-android.yml` — собирает debug APK и загружает его в Artifacts.
+- `.github/workflows/build-android.yml` — собирает debug APK, загружает его в Artifacts и публикует в GitHub Releases.
 
 Для Pages в настройках репозитория должен быть выбран источник **GitHub Actions** (это уже настроено через API).
 

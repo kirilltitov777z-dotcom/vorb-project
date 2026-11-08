@@ -76,8 +76,9 @@ fun VorbApp(viewModel: VorbViewModel) {
         when {
             state.connected -> viewModel.disconnect()
             state.busy -> Unit
-            state.config.isNullOrBlank() -> navController.navigate("import")
             else -> {
+                // Ask for VPN permission first, then Vorb creates a config
+                // automatically (if needed) and connects.
                 val prepareIntent: Intent? = VpnService.prepare(context)
                 if (prepareIntent != null) {
                     vpnPermissionLauncher.launch(prepareIntent)
@@ -148,6 +149,7 @@ fun VorbApp(viewModel: VorbViewModel) {
                     onThemeChange = viewModel::setTheme,
                     onDynamicColorChange = viewModel::setDynamicColor,
                     onDeleteConfig = viewModel::deleteConfig,
+                    onRegenerateConfig = viewModel::regenerateConfig,
                     onBack = { navController.popBackStack() },
                 )
             }

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.vorb.vpn.data.ConfigStore
 import com.vorb.vpn.data.ConfigSummary
 import com.vorb.vpn.ui.theme.ThemeMode
+import com.vorb.vpn.vpn.WarpRegistrar
 import com.vorb.vpn.vpn.WireGuardManager
 import com.wireguard.config.Config
 import java.io.BufferedReader
@@ -31,6 +32,7 @@ data class VorbUiState(
     val summary: ConfigSummary = ConfigSummary(),
     val connected: Boolean = false,
     val busy: Boolean = false,
+    val generating: Boolean = false,
     val error: String? = null,
     val rxBytes: Long = 0L,
     val txBytes: Long = 0L,
@@ -108,18 +110,54 @@ class VorbViewModel(application: Application) : AndroidViewModel(application) {
         val current = _state.value
         if (current.busy) return
 
-        val config = current.config
-        if (config.isNullOrBlank()) {
-            showError("Сначала импортируйте WireGuard-конфиг.")
-            return
-        }
+        val needsConfig = current.config.isNullOrBlank()
+        _state.update { it.copy(busy = true, generating = needsConfig, error = null) }
 
-        _state.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            val result = vpn.connect(config)
+            var config = _state.value.config
+
+            if (config.isNullOrBlank()) {
+                val generated = WarpRegistrar.generate().getOrElse { error ->
+                    _state.update {
+                        it.copy(
+                            busy = false,
+                            generating = false,
+                            error = "Не удалось создать конфиг WARP: ${error.message ?: "неизвестная ошибка"}.",
+                        )
+                    }
+                    return@launch
+                }
+
+                config = try {
+                    store.save(generated)
+                    generated
+                } catch (error: Exception) {
+                    _state.update {
+                        it.copy(
+                            busy = false,
+                            generating = false,
+                            error = "Не удалось сохранить конфиг: ${error.message ?: "ошибка файла"}.",
+                        )
+                    }
+                    return@launch
+                }
+
+                _state.update {
+                    it.copy(
+                        config = generated,
+                        summary = store.summarize(generated),
+                        generating = false,
+                    )
+                }
+            }
+
+            val activeConfig = config ?: return@launch
+            val result = vpn.connect(activeConfig)
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(connected = true, busy = false, error = null) }
+                    _state.update {
+                        it.copy(connected = true, busy = false, generating = false, error = null)
+                    }
                     startStats()
                 },
                 onFailure = { error ->
@@ -127,7 +165,55 @@ class VorbViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(
                             connected = false,
                             busy = false,
+                            generating = false,
                             error = error.userMessage(),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    /** Creates a fresh WARP identity, replacing the current config. */
+    fun regenerateConfig() {
+        val current = _state.value
+        if (current.connected) {
+            showError("Сначала отключите VPN, затем создайте новый конфиг.")
+            return
+        }
+        if (current.busy) return
+
+        _state.update { it.copy(busy = true, generating = true, error = null) }
+        viewModelScope.launch {
+            WarpRegistrar.generate().fold(
+                onSuccess = { generated ->
+                    try {
+                        store.save(generated)
+                        _state.update {
+                            it.copy(
+                                config = generated,
+                                summary = store.summarize(generated),
+                                busy = false,
+                                generating = false,
+                                error = null,
+                            )
+                        }
+                    } catch (error: Exception) {
+                        _state.update {
+                            it.copy(
+                                busy = false,
+                                generating = false,
+                                error = "Не удалось сохранить конфиг: ${error.message ?: "ошибка файла"}.",
+                            )
+                        }
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            busy = false,
+                            generating = false,
+                            error = "Не удалось создать конфиг WARP: ${error.message ?: "неизвестная ошибка"}.",
                         )
                     }
                 },
